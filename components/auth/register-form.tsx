@@ -2,6 +2,8 @@
 
 export const RegisterForm = () => {
   return (
-    <div>RegisterForm</div>
+    <div>
+      <p className="text-black">Register Form</p>
+    </div>
   )
 }
