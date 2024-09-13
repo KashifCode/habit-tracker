@@ -1,35 +1,32 @@
-import mongoose, { Mongoose } from "mongoose";
+import { MongoClient, ServerApiVersion } from 'mongodb';
 
-const MONGODB_URI: string = process.env.MONGODB_URI || '';
-
-if(!MONGODB_URI || MONGODB_URI === '') {
-    throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
+if (!process.env.MONGODB_URI) {
+    throw new Error('Invalid/Missing environment variable: "MONGODB_URI"')
 }
 
-interface MongooseCache {
-    conn: Mongoose | null;
-    promise: Promise<Mongoose> | null;
+const uri = process.env.MONGODB_URI
+const options = {
+    serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+    },
 }
 
-let cached: MongooseCache = (global as { mongoose?: MongooseCache }).mongoose!;
+let client: MongoClient;
 
-if(!cached) {
-    cached = (global as { mongoose?: MongooseCache }).mongoose = { conn: null, promise: null };
-}
-
-async function connectDB(): Promise<Mongoose> {
-    if(cached.conn) {
-        return cached.conn;
+if (process.env.NODE_ENV === "development") {
+    const globalWithMongo = global as typeof globalThis & {
+        _mongoClient?: MongoClient
     }
 
-    if(!cached.promise) {
-        cached.promise = mongoose.connect(MONGODB_URI).then((mongooseInstance) => {
-            return mongooseInstance;
-        });    
+    if (!globalWithMongo._mongoClient) {
+        globalWithMongo._mongoClient = new MongoClient(uri, options)
     }
-
-    cached.conn = await cached.promise;
-    return cached.conn;
+    client = globalWithMongo._mongoClient
+} else {
+    // In production mode, it's best to not use a global variable.
+    client = new MongoClient(uri, options)
 }
 
-export default connectDB;
+export default client;
